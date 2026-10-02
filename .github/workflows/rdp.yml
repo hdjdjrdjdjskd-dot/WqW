@@ -31,8 +31,11 @@ jobs:
           choco install tailscale -y
 
       - name: Establish Tailscale Connection
+        shell: cmd
+        env:
+          TS_KEY: \${{ secrets.TAILSCALE_AUTH_KEY }}
         run: |
-          & "C:\Program Files\Tailscale\tailscale.exe" up --authkey=\({{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-\){{ github.run_id }}
+          "C:\Program Files\Tailscale\tailscale.exe" up --authkey=%TS_KEY% --hostname=gh-runner-%GITHUB_RUN_ID%
 
       - name: Maintain Connection & Auto-Trigger Next Machine
         env:
