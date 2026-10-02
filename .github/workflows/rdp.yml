@@ -22,9 +22,8 @@ jobs:
       - name: Create RDP User with Secure Password
         shell: cmd
         run: |
-          net user RDP Miapc2026Virtual /add
+          net user RDP Pc2026Virt /add /y
           net localgroup Administrators RDP /add
-          net localgroup "Remote Desktop Users" RDP /add
 
       - name: Install Tailscale
         run: |
@@ -54,7 +53,7 @@ jobs:
           Write-Host "`n=== RDP ACCESS ==="
           Write-Host "Address: \$env:TAILSCALE_IP"
           Write-Host "Username: RDP"
-          Write-Host "Password: Miapc2026Virtual"
+          Write-Host "Password: Pc2026Virt"
           Write-Host "==================`n"
 
           $maxSeconds = 20700
