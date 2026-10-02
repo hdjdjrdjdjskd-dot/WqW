@@ -21,7 +21,7 @@ jobs:
 
       - name: Create RDP User with Secure Password
         run: |
-          \$password = "Miapc.2026.Virtual!"
+          \$password = "Miapc2026Virtual"
           securePass = ConvertTo-SecureString password -AsPlainText -Force
           New-LocalUser -Name "RDP" -Password \$securePass -AccountNeverExpires
           Add-LocalGroupMember -Group "Administrators" -Member "RDP"
