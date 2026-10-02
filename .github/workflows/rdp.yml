@@ -27,7 +27,7 @@ jobs:
         shell: cmd
         run: |
           choco install ngrok -y
-          "C:\ProgramData\chocolatey\bin\ngrok.exe" config add-authtoken \${{ secrets.NGROK_AUTH_TOKEN }}
+          "C:\ProgramData\chocolatey\bin\ngrok.exe" config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
 
       - name: Start Ngrok Tunnel
         shell: cmd
