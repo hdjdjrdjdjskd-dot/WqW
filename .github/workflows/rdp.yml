@@ -31,9 +31,8 @@ jobs:
           choco install tailscale -y
 
       - name: Establish Tailscale Connection
-        shell: cmd
         run: |
-          "C:\Program Files\Tailscale\tailscale.exe" up --authkey=\${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-%GITHUB_RUN_ID%
+          & "C:\Program Files\Tailscale\tailscale.exe" up --authkey=\({{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-\){{ github.run_id }}
 
       - name: Maintain Connection & Auto-Trigger Next Machine
         env:
@@ -41,10 +40,12 @@ jobs:
           REPO_OWNER: \${{ github.repository_owner }}
           REPO_NAME: \${{ github.event.repository.name }}
         run: |
+          \$tsIP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
+          
           Write-Host "`n=== RDP ACCESS ==="
+          Write-Host "Address: \$tsIP"
           Write-Host "Username: RDP"
           Write-Host "Password: Pc2026Virt"
-          Write-Host "Check your Tailscale dashboard for the IP address."
           Write-Host "==================`n"
 
           $maxSeconds = 20700
