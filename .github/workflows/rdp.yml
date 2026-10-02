@@ -25,11 +25,9 @@ jobs:
 
       - name: Install and Configure Ngrok
         shell: cmd
-        env:
-          MY_NGROK_TOKEN: \${{ secrets.NGROK_AUTH_TOKEN }}
         run: |
           choco install ngrok -y
-          "C:\ProgramData\chocolatey\bin\ngrok.exe" config add-authtoken %MY_NGROK_TOKEN%
+          "C:\ProgramData\chocolatey\bin\ngrok.exe" config add-authtoken \${{ secrets.NGROK_AUTH_TOKEN }}
 
       - name: Start Ngrok Tunnel
         shell: cmd
@@ -38,9 +36,9 @@ jobs:
 
       - name: Maintain Connection & Auto-Trigger Next Machine
         env:
-          GH_TOKEN: \${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          REPO_OWNER: \${{ github.repository_owner }}
-          REPO_NAME: \${{ github.event.repository.name }}
+          GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
         run: |
           Write-Host "`n=== RDP ACCESS VIA NGROK ==="
           Write-Host "Username: RDP"
