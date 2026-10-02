@@ -1,0 +1,97 @@
+name: RDP 24-7 Infinito
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [reiniciar_rdp]
+
+jobs:
+  secure-rdp:
+    runs-on: windows-latest
+
+    steps:
+      - name: Configure Core RDP Settings
+        run: |
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0 -Force
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0 -Force
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "SecurityLayer" -Value 0 -Force
+          netsh advfirewall firewall delete rule name="RDP-Tailscale"
+          netsh advfirewall firewall add rule name="RDP-Tailscale" dir=in action=allow protocol=TCP localport=3389
+          Restart-Service -Name TermService -Force
+
+      - name: Create RDP User with Secure Password
+        run: |
+          Add-Type -AssemblyName System.Security
+          \$charSet = @{
+              Upper   = [char[]](65..90)
+              Lower   = [char[]](97..122)
+              Number  = [char[]](48..57)
+              Special = ([char[]](33..47) + [char[]](58..64) + [char[]](91..96) + [char[]](123..126))
+          }
+          \$rawPassword = @()
+          rawPassword += charSet.Upper | Get-Random -Count 4
+          rawPassword += charSet.Lower | Get-Random -Count 4
+          rawPassword += charSet.Number | Get-Random -Count 4
+          rawPassword += charSet.Special | Get-Random -Count 4
+          password = -join (rawPassword | Sort-Object { Get-Random })
+          securePass = ConvertTo-SecureString password -AsPlainText -Force
+          New-LocalUser -Name "RDP" -Password \$securePass -AccountNeverExpires
+          Add-LocalGroupMember -Group "Administrators" -Member "RDP"
+          Add-LocalGroupMember -Group "Remote Desktop Users" -Member "RDP"
+          echo "RDP_CREDS=User: RDP | Password: password" >> env:GITHUB_ENV
+
+      - name: Install Tailscale
+        run: |
+          \$tsUrl = "https://tailscale.com"
+          installerPath = "env:TEMP\tailscale.msi"
+          Invoke-WebRequest -Uri tsUrl -OutFile installerPath
+          Start-Process msiexec.exe -ArgumentList "/i", "`"\$installerPath`"", "/quiet", "/norestart" -Wait
+          Remove-Item $installerPath -Force
+
+      - name: Establish Tailscale Connection
+        run: |
+          & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-$env:GITHUB_RUN_ID
+          $tsIP = $null
+          $retries = 0
+          while (-not $tsIP -and $retries -lt 10) {
+              $tsIP = & "$env:ProgramFiles\Tailscale\tailscale.exe" ip -4
+              Start-Sleep -Seconds 5
+              $retries++
+          }
+          if (-not $tsIP) { exit 1 }
+          echo "TAILSCALE_IP=$tsIP" >> $env:GITHUB_ENV
+
+      - name: Maintain Connection & Auto-Trigger Next Machine
+        env:
+          GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          Write-Host "`n=== RDP ACCESS ==="
+          Write-Host "Address: \$env:TAILSCALE_IP"
+          Write-Host "Username: RDP"
+          Write-Host "Password: \$env:RDP_CREDS"
+          Write-Host "==================`n"
+
+          $maxSeconds = 20700
+          $elapsed = 0
+          $interval = 300
+
+          while ($elapsed -lt $maxSeconds) {
+              Write-Host "[$(Get-Date)] RDP Active - Repitiendo ciclo..."
+              Start-Sleep -Seconds $interval
+              $elapsed += $interval
+          }
+
+          Write-Host "Límite de tiempo cerca. Invocando nueva máquina para mantener el 24/7..."
+          
+          $body = @{ event_type = "reiniciar_rdp" } | ConvertTo-Json
+          $headers = @{
+              "Authorization" = "token $env:GH_TOKEN"
+              "Accept"        = "application/vnd.github.v3+json"
+          }
+          
+          Invoke-RestMethod -Uri "https://github.com" `
+                            -Method Post -Headers headers -Body body -ContentType "application/json"
+          
+          Write-Host "Nueva máquina solicitada con éxito. Cerrando la sesión actual."
