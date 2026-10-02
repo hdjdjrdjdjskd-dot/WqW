@@ -36,9 +36,9 @@ jobs:
 
       - name: Maintain Connection & Auto-Trigger Next Machine
         env:
-          GH_TOKEN: \${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          REPO_OWNER: \${{ github.repository_owner }}
-          REPO_NAME: \${{ github.event.repository.name }}
+          GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
         run: |
           Write-Host "`n=== RDP ACCESS VIA NGROK ==="
           Write-Host "Username: RDP"
