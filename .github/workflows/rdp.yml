@@ -1,4 +1,4 @@
-name: RDP 24-7 Infinito Ngrok
+name: RDP 24-7 Infinito LocalTunnel
 
 on:
   workflow_dispatch:
@@ -23,16 +23,11 @@ jobs:
           net user RDP Pc2026Virt /add /y
           net localgroup Administrators RDP /add
 
-      - name: Install and Configure Ngrok
+      - name: Install and Start LocalTunnel
         shell: cmd
         run: |
-          choco install ngrok -y
-          "C:\ProgramData\chocolatey\bin\ngrok.exe" config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
-
-      - name: Start Ngrok Tunnel
-        shell: cmd
-        run: |
-          start /b "" "C:\ProgramData\chocolatey\bin\ngrok.exe" tcp 3389
+          npm install -g localtunnel
+          start /b lt --port 3389 --subdomain pc-virtual-%GITHUB_RUN_ID%
 
       - name: Maintain Connection & Auto-Trigger Next Machine
         env:
@@ -40,11 +35,11 @@ jobs:
           REPO_OWNER: ${{ github.repository_owner }}
           REPO_NAME: ${{ github.event.repository.name }}
         run: |
-          Write-Host "`n=== RDP ACCESS VIA NGROK ==="
+          Write-Host "`n=== RDP ACCESS VIA LOCALTUNNEL ==="
           Write-Host "Username: RDP"
           Write-Host "Password: Pc2026Virt"
-          Write-Host "Entra a tu panel de ngrok.com -> 'Endpoints' para ver la IP y Puerto."
-          Write-Host "============================`n"
+          Write-Host "Tu enlace de conexión será: pc-virtual-$env:GITHUB_RUN_ID.localtunnel.me"
+          Write-Host "==================================`n"
 
           $maxSeconds = 20700
           $elapsed = 0
