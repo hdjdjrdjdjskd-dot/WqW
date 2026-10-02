@@ -32,14 +32,9 @@ jobs:
           Remove-Item "C:\tailscale.msi" -Force
 
       - name: Establish Tailscale Connection
+        shell: cmd
         run: |
-          & "C:\Program Files\Tailscale\tailscale.exe" up --authkey=\${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-\({{ github.run_id }}\)tsIP = \(null\)retries = 0
-          while (-not \$tsIP -and \(retries -lt 10) {\)tsIP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
-              Start-Sleep -Seconds 5
-              \$retries++
-          }
-          if (-not \$tsIP) { exit 1 }
-          echo "TAILSCALE_IP=tsIP" >> env:GITHUB_ENV
+          "C:\Program Files\Tailscale\tailscale.exe" up --authkey=\${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-%GITHUB_RUN_ID%
 
       - name: Maintain Connection & Auto-Trigger Next Machine
         env:
@@ -47,8 +42,10 @@ jobs:
           REPO_OWNER: \${{ github.repository_owner }}
           REPO_NAME: \${{ github.event.repository.name }}
         run: |
+          \$tsIP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
+          
           Write-Host "`n=== RDP ACCESS ==="
-          Write-Host "Address: \$env:TAILSCALE_IP"
+          Write-Host "Address: \$tsIP"
           Write-Host "Username: RDP"
           Write-Host "Password: Pc2026Virt"
           Write-Host "==================`n"
