@@ -27,28 +27,26 @@ jobs:
 
       - name: Install Tailscale
         run: |
-          Invoke-WebRequest -Uri "https://tailscale.com" -OutFile "\$env:TEMP\tailscale.msi"
-          Start-Process msiexec.exe -ArgumentList "/i", "`"\$env:TEMP\tailscale.msi`"", "/quiet", "/norestart" -Wait
-          Remove-Item "$env:TEMP\tailscale.msi" -Force
+          Invoke-WebRequest -Uri "https://tailscale.com" -OutFile "C:\tailscale.msi"
+          Start-Process msiexec.exe -ArgumentList "/i", "C:\tailscale.msi", "/quiet", "/norestart" -Wait
+          Remove-Item "C:\tailscale.msi" -Force
 
       - name: Establish Tailscale Connection
         run: |
-          & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-$env:GITHUB_RUN_ID
-          $tsIP = $null
-          $retries = 0
-          while (-not $tsIP -and $retries -lt 10) {
-              $tsIP = & "$env:ProgramFiles\Tailscale\tailscale.exe" ip -4
+          & "\(env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=\){{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-\(env:GITHUB_RUN_ID\)tsIP = \(null\)retries = 0
+          while (-not tsIP -and retries -lt 10) {
+              \(tsIP = & "\)env:ProgramFiles\Tailscale\tailscale.exe" ip -4
               Start-Sleep -Seconds 5
-              $retries++
+              \$retries++
           }
-          if (-not $tsIP) { exit 1 }
-          echo "TAILSCALE_IP=$tsIP" >> $env:GITHUB_ENV
+          if (-not \$tsIP) { exit 1 }
+          echo "TAILSCALE_IP=tsIP" >> env:GITHUB_ENV
 
       - name: Maintain Connection & Auto-Trigger Next Machine
         env:
-          GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          REPO_OWNER: ${{ github.repository_owner }}
-          REPO_NAME: ${{ github.event.repository.name }}
+          GH_TOKEN: \${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          REPO_OWNER: \${{ github.repository_owner }}
+          REPO_NAME: \${{ github.event.repository.name }}
         run: |
           Write-Host "`n=== RDP ACCESS ==="
           Write-Host "Address: \$env:TAILSCALE_IP"
