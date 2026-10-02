@@ -20,21 +20,17 @@ jobs:
           Restart-Service -Name TermService -Force
 
       - name: Create RDP User with Secure Password
+        shell: cmd
         run: |
-          \$password = "Miapc2026Virtual"
-          securePass = ConvertTo-SecureString password -AsPlainText -Force
-          New-LocalUser -Name "RDP" -Password \$securePass -AccountNeverExpires
-          Add-LocalGroupMember -Group "Administrators" -Member "RDP"
-          Add-LocalGroupMember -Group "Remote Desktop Users" -Member "RDP"
-          echo "RDP_CREDS=User: RDP | Password: password" >> env:GITHUB_ENV
+          net user RDP Miapc2026Virtual /add
+          net localgroup Administrators RDP /add
+          net localgroup "Remote Desktop Users" RDP /add
 
       - name: Install Tailscale
         run: |
-          \$tsUrl = "https://tailscale.com"
-          installerPath = "env:TEMP\tailscale.msi"
-          Invoke-WebRequest -Uri tsUrl -OutFile installerPath
-          Start-Process msiexec.exe -ArgumentList "/i", "`"\$installerPath`"", "/quiet", "/norestart" -Wait
-          Remove-Item $installerPath -Force
+          Invoke-WebRequest -Uri "https://tailscale.com" -OutFile "\$env:TEMP\tailscale.msi"
+          Start-Process msiexec.exe -ArgumentList "/i", "`"\$env:TEMP\tailscale.msi`"", "/quiet", "/norestart" -Wait
+          Remove-Item "$env:TEMP\tailscale.msi" -Force
 
       - name: Establish Tailscale Connection
         run: |
@@ -58,7 +54,7 @@ jobs:
           Write-Host "`n=== RDP ACCESS ==="
           Write-Host "Address: \$env:TAILSCALE_IP"
           Write-Host "Username: RDP"
-          Write-Host "Password: \$env:RDP_CREDS"
+          Write-Host "Password: Miapc2026Virtual"
           Write-Host "==================`n"
 
           $maxSeconds = 20700
@@ -71,7 +67,7 @@ jobs:
               $elapsed += $interval
           }
 
-          Write-Host "Límite de tiempo cerca. Invocando nueva máquina para mantener el 24/7..."
+          Write-Host "Límite de tiempo cerca. Invocando nueva máquina..."
           
           $body = @{ event_type = "reiniciar_rdp" } | ConvertTo-Json
           $headers = @{
@@ -81,5 +77,3 @@ jobs:
           
           Invoke-RestMethod -Uri "https://github.com" `
                             -Method Post -Headers headers -Body body -ContentType "application/json"
-          
-          Write-Host "Nueva máquina solicitada con éxito. Cerrando la sesión actual."
