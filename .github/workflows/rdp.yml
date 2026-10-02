@@ -1,4 +1,4 @@
-name: RDP 24-7 Infinito
+name: RDP 24-7 Infinito Ngrok
 
 on:
   workflow_dispatch:
@@ -15,25 +15,24 @@ jobs:
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0 -Force
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0 -Force
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "SecurityLayer" -Value 0 -Force
-          netsh advfirewall firewall delete rule name="RDP-Tailscale"
-          netsh advfirewall firewall add rule name="RDP-Tailscale" dir=in action=allow protocol=TCP localport=3389
           Restart-Service -Name TermService -Force
 
-      - name: Create RDP User with Secure Password
+      - name: Create RDP User
         shell: cmd
         run: |
           net user RDP Pc2026Virt /add /y
           net localgroup Administrators RDP /add
 
-      - name: Install Tailscale via Chocolatey
+      - name: Install and Configure Ngrok
         shell: cmd
         run: |
-          choco install tailscale -y
+          choco install ngrok -y
+          ngrok config add-authtoken \${{ secrets.NGROK_AUTH_TOKEN }}
 
-      - name: Establish Tailscale Connection
+      - name: Start Ngrok Tunnel
         shell: cmd
         run: |
-          "C:\Program Files\Tailscale\tailscale.exe" up --authkey=\${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-%GITHUB_RUN_ID% --accept-routes
+          start /b ngrok tcp 3389
 
       - name: Maintain Connection & Auto-Trigger Next Machine
         env:
@@ -41,13 +40,11 @@ jobs:
           REPO_OWNER: \${{ github.repository_owner }}
           REPO_NAME: \${{ github.event.repository.name }}
         run: |
-          \$tsIP = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
-          
-          Write-Host "`n=== RDP ACCESS ==="
-          Write-Host "Address: \$tsIP"
+          Write-Host "`n=== RDP ACCESS VIA NGROK ==="
           Write-Host "Username: RDP"
           Write-Host "Password: Pc2026Virt"
-          Write-Host "==================`n"
+          Write-Host "Entra a tu panel de ngrok.com -> 'Endpoints' para ver la IP y Puerto."
+          Write-Host "============================`n"
 
           $maxSeconds = 20700
           $elapsed = 0
@@ -60,12 +57,10 @@ jobs:
           }
 
           Write-Host "Límite de tiempo cerca. Invocando nueva máquina..."
-          
           $body = @{ event_type = "reiniciar_rdp" } | ConvertTo-Json
           $headers = @{
               "Authorization" = "token $env:GH_TOKEN"
               "Accept"        = "application/vnd.github.v3+json"
           }
-          
           Invoke-RestMethod -Uri "https://github.com" `
                             -Method Post -Headers headers -Body body -ContentType "application/json"
