@@ -27,9 +27,9 @@ jobs:
 
       - name: Install Tailscale
         run: |
-          Invoke-WebRequest -Uri "https://tailscale.com" -OutFile "C:\tailscale.msi"
-          Start-Process msiexec.exe -ArgumentList "/i", "C:\tailscale.msi", "/quiet", "/norestart" -Wait
-          Remove-Item "C:\tailscale.msi" -Force
+          Invoke-WebRequest -Uri "https://tailscale.com" -OutFile "tailscale.msi"
+          Start-Process msiexec.exe -ArgumentList "/i", "tailscale.msi", "/quiet", "/norestart" -Wait
+          Remove-Item "tailscale.msi" -Force
 
       - name: Establish Tailscale Connection
         shell: cmd
