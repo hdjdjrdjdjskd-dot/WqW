@@ -25,10 +25,15 @@ jobs:
           net user RDP Pc2026Virt /add /y
           net localgroup Administrators RDP /add
 
-      - name: Connect Tailscale using Official Action
-        uses: tailscale/github-action@v2
-        with:
-          authkey: \${{ secrets.TAILSCALE_AUTH_KEY }}
+      - name: Install Tailscale via Chocolatey
+        shell: cmd
+        run: |
+          choco install tailscale -y
+
+      - name: Establish Tailscale Connection
+        shell: cmd
+        run: |
+          "C:\Program Files\Tailscale\tailscale.exe" up --authkey=\${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-%GITHUB_RUN_ID%
 
       - name: Maintain Connection & Auto-Trigger Next Machine
         env:
